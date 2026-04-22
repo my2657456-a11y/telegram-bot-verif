@@ -2,9 +2,9 @@ import random
 import asyncio
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, ChatMemberHandler
+from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
-# Ambil token dari Railway Variables
+# Ambil token dari Railway
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
@@ -12,33 +12,34 @@ if not BOT_TOKEN:
 
 pending_users = {}
 
-# Saat ada member baru
+# 🔥 DETECT MEMBER BARU (FIX)
 async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    result = update.chat_member
-    user = result.new_chat_member.user
+    if not update.message:
+        return
 
-    if result.old_chat_member.status in ["left", "kicked"] and result.new_chat_member.status == "member":
+    for user in update.message.new_chat_members:
         if user.is_bot:
-            return
+            continue
 
         chat_id = update.effective_chat.id
         user_id = user.id
 
+        # Soal random
         a = random.randint(1, 10)
         b = random.randint(1, 10)
         answer = a + b
 
         pending_users[user_id] = {"answer": answer, "chat_id": chat_id}
 
-        await context.bot.send_message(
-            chat_id,
+        await update.message.reply_text(
             f"Halo {user.first_name}! Verifikasi dulu ya!\n\nBerapa {a} + {b}? (60 detik)"
         )
 
+        # Timer kick
         asyncio.create_task(timeout_kick(context, chat_id, user_id, user.first_name))
 
 
-# Timeout kick
+# ⏱️ AUTO KICK JIKA TIDAK JAWAB
 async def timeout_kick(context, chat_id, user_id, name):
     await asyncio.sleep(60)
 
@@ -53,7 +54,7 @@ async def timeout_kick(context, chat_id, user_id, name):
         await context.bot.send_message(chat_id, f"{name} tidak verifikasi. Auto kick!")
 
 
-# Cek jawaban user
+# ✅ CEK JAWABAN
 async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
@@ -63,18 +64,21 @@ async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             if int(update.message.text) == correct:
                 del pending_users[user_id]
-                await update.message.reply_text("Verifikasi berhasil!")
+                await update.message.reply_text("Verifikasi berhasil! ✅")
             else:
-                await update.message.reply_text("Jawaban salah!")
+                await update.message.reply_text("Jawaban salah ❌")
         except:
             await update.message.reply_text("Masukkan angka yang valid!")
 
 
-# Main
+# 🚀 MAIN
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(ChatMemberHandler(new_member, ChatMemberHandler.CHAT_MEMBER))
+    # 🔥 FIX handler join
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_member))
+
+    # cek jawaban
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_answer))
 
     print("Bot berjalan...")
