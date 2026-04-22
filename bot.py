@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
 
 # Ambil token dari Railway
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("8696238507:AAG9F1QR5DSf1e20ZbzEqGK22Bn0aK8eK1E")
 
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN tidak ditemukan!")
