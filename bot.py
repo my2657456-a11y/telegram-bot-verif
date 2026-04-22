@@ -4,7 +4,12 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, ChatMemberHandler
 
+# Ambil token dari Railway Variables
 BOT_TOKEN = os.getenv("8696238507:AAG9F1QR5DSf1e20ZbzEqGK22Bn0aK8eK1E")
+
+# Cek biar gak kosong
+if not BOT_TOKEN:
+    raise ValueError("BOT_TOKEN tidak ditemukan di environment variables!")
 
 pending_users = {}
 
@@ -32,6 +37,7 @@ async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         asyncio.create_task(timeout_kick(context, chat_id, user_id, user.first_name))
 
+
 async def timeout_kick(context, chat_id, user_id, name):
     await asyncio.sleep(60)
 
@@ -40,6 +46,7 @@ async def timeout_kick(context, chat_id, user_id, name):
         del pending_users[user_id]
 
         await context.bot.send_message(chat_id, f"{name} tidak verifikasi. Auto kick!")
+
 
 async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -54,11 +61,16 @@ async def check_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await update.message.reply_text("Jawaban salah!")
         except:
-            pass
+            await update.message.reply_text("Masukkan angka yang valid!")
 
+
+# Build aplikasi
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
+# Handler
 app.add_handler(ChatMemberHandler(new_member, ChatMemberHandler.CHAT_MEMBER))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_answer))
 
+# Run bot
+print("Bot berjalan...")
 app.run_polling()
